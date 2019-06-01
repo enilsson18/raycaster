@@ -14,9 +14,18 @@ app.get('/assets/:Image', function (req, res){
   res.sendFile(__dirname + '/assets/' + req.params.Image);
 });
 
+app.get('/raycasting.js', function (req, res){
+  res.sendFile(__dirname + '/raycasting.js');
+});
+
+app.get('/socket.io/socket.io.js', function (req, res){
+  res.sendFile(__dirname + '/socket.io/socket.io.js');
+});
+
 io.on('connection', function(socket){
   socket.on('newconnection', function(){
       console.log('player has connected');
+	  socket.pID = online;
       online += 1;
       socket.emit('setup', online);
       socket.join('lobby');
@@ -25,8 +34,7 @@ io.on('connection', function(socket){
   
   socket.on('disconnect', function(){
     console.log('player has disconnected');
-    io.sockets.in('lobby').emit('disconnection', socket.username);
-    
+    io.sockets.in('lobby').emit('disconnection', socket.pID);
     online -= 1;
     io.sockets.emit('updateOnline', online);
   });

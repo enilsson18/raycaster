@@ -5,6 +5,7 @@ canvas.height = window.innerHeight;
 var socket = io();
 var online;
 var playerData = [];
+var playerID;
 var room = "lobby";
 
 var x, y, rot, fovData;
@@ -16,6 +17,7 @@ var speed = 0.08;
 var turnSpeed = 4;
 var scale = canvas.width/(fov*quality);
 var globalScale = canvas.height/969;
+var mouseSpeedScale = 8;
 
 var rockWall = new Image();
 rockWall.src = "assets/brick_wall_texture.jpg";
@@ -73,11 +75,15 @@ socket.on('connect', function() {
     socket.emit('newconnection');
 });
 
+socket.on('disconnection', function(id){
+	
+});
+
 socket.on("updateOnline", function(o){
 	online = o;
 });
 
-socket.on("run", function(id, nX, nY){
+socket.on("newMove", function(id, nX, nY){
 	if (id >= playerData.length){
 		playerData.push({x:nX,y:nY});
 	} else {
@@ -89,6 +95,7 @@ socket.on("run", function(id, nX, nY){
 reset();
 
 function reset(){
+	canvas.requestPointerLock();
   Map = dungeonMap;
     for (var i = 0; i < Map.length; i++) {
         for (var j = 0; j < Map[i].length; j++) {
@@ -107,13 +114,6 @@ function run(){
     ctx.fillStyle = "#2B2B2B";
     ctx.fillRect(0,0,canvas.width,canvas.height);
     sense();
-
-	for(var i = 0; i < playerData.length; i++){
-		var pDist = getDist(x,y,playerData[i].x,playerData[i].y);
-		var height = canvas.height/fovData[i].dist;
-		
-		ctx.drawImage(playerImage, sensePos(playerData[i].x,playerData[i].y),(canvas.height-height)/2, (playerImage.width/canvas.height) * height, height);
-	}
 	
     for (var i = 0; i < fovData.length; i++){
         var height = canvas.height/fovData[i].dist;
@@ -125,10 +125,22 @@ function run(){
             ctx.drawImage(fovData[i].pic, fovData[i].picSeg , 0, (fovData[i].pic.width/canvas.width)*scale, fovData[i].pic.height,i*scale,(canvas.height-height)/2, scale+1.5, height);
         }
     }
+	
+	
+	for(var i = 0; i < playerData.length; i++){
+		var pDist = getDist(x,y,playerData[i].x,playerData[i].y);
+		var height = canvas.height/pDist;
+		
+		if (i != playerID){
+			ctx.drawImage(playerImage, sensePos(playerData[i].x,playerData[i].y),(canvas.height-height)/2, height/scale, height);
+		}
+	}
+	
+
 
     MiniMap();
     Menu();
-	socket.emit(room, playerID, x,y);
+	socket.emit("move",room, playerID, x, y);
 }
 
 function sense2(){
@@ -184,9 +196,10 @@ function sense2(){
 }
 
 function sensePos(nX,nY){
-	var slope = (y-nY)/(x-nX);
-	var pAngle = natRot(Math.atan(slope));
-	return (pAngle/(fov/2+rot)*canvas.width);
+	var slope = (nY-y)/(nX-x);
+	var pAngle = natRot(Math.atan(slope) * (180/Math.PI));
+	console.log(pAngle);
+	return ((natRot(pAngle-rot)/fov)*canvas.width);
 }
 
 function sense(){
@@ -364,6 +377,13 @@ function Menu(){
 
 }
 
+function fire(){
+	
+}
+
+document.addEventListener('mousemove', mouseMovement);
+canvas.addEventListener('mousedown', mouseClicks);
+
 var keyState = {};
 setInterval(keyLoop, 40);
 window.document.addEventListener('keydown', function(e) {
@@ -444,8 +464,26 @@ function keyLoop() {
         }
         scale = canvas.width/(fov*quality);
     }
+	
     boundsCheck();
     rot = natRot(rot);
+}
+
+function mouseMovement(event){
+	if (document.pointerLockElement === canvas){
+		rot += event.movementX/(mouseSpeedScale);
+		rot = natRot(rot);
+	} 
+}
+
+function mouseClicks(event){
+	if (document.pointerLockElement != canvas){
+		if (event.button == 0){
+			canvas.requestPointerLock();
+		}
+	} else {
+		fire();
+	}
 }
 
 function natRot(r){
