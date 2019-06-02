@@ -197,7 +197,7 @@ function sense2(){
 
 function sensePos(nX,nY){
 	var slope = (nY-y)/(nX-x);
-	var pAngle = natRot(Math.atan(slope) * (180/Math.PI));
+	var pAngle = natRot(Math.atan(slope) * (180/Math.PI)+rot);
 	console.log(pAngle);
 	return ((natRot(pAngle-rot)/fov)*canvas.width);
 }
