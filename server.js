@@ -25,10 +25,6 @@ app.get('/raycasting.js', function (req, res){
   res.sendFile(__dirname + '/raycasting.js');
 });
 
-app.get('/socket.io/socket.io.js', function (req, res){
-  res.sendFile(__dirname + '/socket.io/socket.io.js');
-});
-
 io.on('connection', function(socket){
   socket.on('newconnection', function(name){
       console.log('player has connected');

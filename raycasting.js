@@ -88,9 +88,13 @@ socket.on("update", function(o, list){
 	playerData = list;
 });
 
+reset();
+
 function reset(){
 	canvas.requestPointerLock();
-  Map = dungeonMap;
+  	if (room == "lobby"){
+		Map = dungeonMap;
+	}
     for (var i = 0; i < Map.length; i++) {
         for (var j = 0; j < Map[i].length; j++) {
             if (Map[i][j] == 9) {
