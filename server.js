@@ -5,6 +5,13 @@ var fs = require('fs');
 var port = process.env.PORT || 2000;
 var online = 0;
 var players = [];
+var roomList = ["lobby"];
+
+var update = setInterval(function(){
+	for (var i = 0; i < roomList.length; i++){
+		io.sockets.in(roomList[i]).emit("update", roomList[i]);
+	}
+},10);
 
 app.get('/', function(req, res) {
   res.sendFile(__dirname + '/index.html');
@@ -23,24 +30,27 @@ app.get('/socket.io/socket.io.js', function (req, res){
 });
 
 io.on('connection', function(socket){
-  socket.on('newconnection', function(){
+  socket.on('newconnection', function(name){
       console.log('player has connected');
 	  socket.pID = online;
+	  socket.username = name;
       online += 1;
-      socket.emit('setup', online);
+      socket.emit('setup', online, "lobby");
       socket.join('lobby');
+	  roomList[roomList.indexOf('lobby')].push(socket.pID);
       io.sockets.emit('updateOnline', online);
   });
   
   socket.on('disconnect', function(){
+	room = io.sockets.manager.roomClients[socket.id];
     console.log('player has disconnected');
-    io.sockets.in('lobby').emit('disconnection', socket.pID);
     online -= 1;
+	roomList[room].remove(roomList[room].indexOf(socket.pID));
     io.sockets.emit('updateOnline', online);
   });
   
-  socket.on('move', function(room, id, x, y){
-    io.sockets.in(room).emit('newMove', id, x, y);
+  socket.on('move', function(room, data){
+	roomList[roomList.indexOf(room)][roomList[roomList.indexOf(room)].indexOf(data.id)].data = data;
   });
   
   socket.on('log', function(msg){
