@@ -20,6 +20,9 @@ var turnSpeed = 4;
 var scale = canvas.width/(fov*quality);
 var globalScale = canvas.height/969;
 var mouseSpeedScale = 8;
+var paces = 0;
+var inHand = fists;
+var cScale = 0.2;
 
 var rockWall = new Image();
 rockWall.src = "assets/brick_wall_texture.jpg";
@@ -29,6 +32,14 @@ var testWall = new Image();
 testWall.src = "assets/testing.png";
 var playerImage = new Image();
 playerImage.src = "assets/mario.png";
+
+var ch = new Image();
+ch.src = "assets/ch.png";
+
+var fists = new Image();
+fists.src = "assets/fists.png";
+var knife = new Image();
+knife.src = "assets/knife_hand.png";
 
 var Map;
 
@@ -68,6 +79,8 @@ var dungeonMap = [
    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
 ];
 
+//reset();
+
 socket.on("setup", function(o, rm){
 	room = rm;
 	online = o;
@@ -77,22 +90,43 @@ socket.on("setup", function(o, rm){
 
 socket.on('connect', function() {
 	name = prompt('Please Enter a Username');
-    socket.emit('newconnection', name, {});
+    socket.emit('newconnection', name);
 });
 
 socket.on('disconnection', function(id){
-	
+	for (var i = 0; i < playerData.length; i++){
+		if (playerData[i].id == id){
+			playerData.splice(i,1);
+			break;
+		}
+	}
 });
 
-socket.on("update", function(o, list){
+socket.on("update", function(o, id, newName, nX, nY, nRot){
 	online = o;
-	playerData = list;
+	var contains = false;
+	for (var i = 0; i < playerData.length; i++){
+		if (playerData[i].id == id){
+			playerData[i] = {id: id, name: newName, x: nX, y: nY, rot: nRot};
+			contains = true;
+			break;
+		}
+	}
+	if (!contains){
+		playerData.push({id: id, name: newName, x: nX, y: nY, rot: nRot});
+	}
+	
+	//console.log(id + " " + newName + " " + nX + " " + nY + " " + nRot);
+	
+	for (var i = 0; i < playerData.length; i++){
+		//console.log(playerData[i]);
+	}
 });
-
-reset();
 
 function reset(){
 	canvas.requestPointerLock();
+	paces = 0;
+	inHand = knife;
   	if (room == 0){
 		Map = dungeonMap;
 	}
@@ -105,11 +139,8 @@ function reset(){
         }
     }
     rot = 45;
-
-    const loop = setInterval(run, 40);
-	moving = setInterval(function(){
-		socket.emit("move",room, {id:playerID, x:x, y:y, rot:rot});
-	},50);
+	
+	setInterval(run, 40);
 }
 
 function run(){
@@ -137,9 +168,21 @@ function run(){
 			ctx.drawImage(playerImage, sensePos(playerData[i].x,playerData[i].y),(canvas.height-height)/2, height/scale, height);
 		}
 	}
+	drawItem(inHand, paces);
+	ctx.drawImage(ch, canvas.width/2-(ch.height*globalScale*cScale), canvas.height/2-(ch.height*globalScale*cScale)/2, ch.height*globalScale*cScale, ch.height*globalScale*cScale);
 	
     MiniMap();
     Menu();
+	socket.emit("move",room, playerID, name, x, y, rot);
+	//console.log({id:playerID, name: name, x:x, y:y, rot:rot});
+}
+
+function drawItem(item) {
+    var bobX = Math.cos(paces * 2) * globalScale * 6;
+    var bobY = Math.sin(paces * 4) * globalScale * 6;
+    var left = canvas.width * 0.5 + bobX;
+    var top = canvas.height * 0.67 + bobY;
+    ctx.drawImage(item, left, top, item.width * globalScale, item.height * globalScale);
 }
 
 function sense2(){
@@ -197,7 +240,7 @@ function sense2(){
 function sensePos(nX,nY){
 	var slope = (nY-y)/(nX-x);
 	var pAngle = natRot(Math.atan(slope) * (180/Math.PI)+rot);
-	console.log(pAngle);
+	//console.log(pAngle);
 	return ((natRot(pAngle-rot)/fov)*canvas.width);
 }
 
@@ -393,6 +436,8 @@ window.document.addEventListener('keyup', function(e) {
 }, true);
 
 function keyLoop() {
+	var nX = x;
+	var nY = y;
     if (keyState[37]) {
         // left arrow
         rot -= turnSpeed;
@@ -408,6 +453,7 @@ function keyLoop() {
         if (getQuadrant(x,y) != 0 && getQuadrant(x,y) != 9) {
             y -= Math.sin((natRot((rot)))*(Math.PI/180))*speed;
         }
+		paces += Math.sqrt((Math.pow((x-tX),2)+Math.pow((y-tY),2)));
     }
     if (keyState[39]) {
         // right arrow
@@ -424,6 +470,7 @@ function keyLoop() {
         if (getQuadrant(x,y) != 0 && getQuadrant(x,y) != 9) {
             y += Math.sin((natRot((rot)))*(Math.PI/180))*speed;
         }
+		paces += Math.sqrt((Math.pow((x-tX),2)+Math.pow((y-tY),2)));
     }
     if (keyState[68]) {
         x += Math.cos((natRot((rot+90)))*(Math.PI/180))*speed;
@@ -434,6 +481,7 @@ function keyLoop() {
         if (getQuadrant(x,y) != 0 && getQuadrant(x,y) != 9) {
             y -= Math.sin((natRot((rot+90)))*(Math.PI/180))*speed;
         }
+		paces += Math.sqrt((Math.pow((x-tX),2)+Math.pow((y-tY),2)));
     }
     if (keyState[65]) {
         x += Math.cos((natRot((rot-90)))*(Math.PI/180))*speed;
@@ -444,6 +492,7 @@ function keyLoop() {
         if (getQuadrant(x,y) != 0 && getQuadrant(x,y) != 9) {
             y -= Math.sin((natRot((rot-90)))*(Math.PI/180))*speed;
         }
+		paces += Math.sqrt((Math.pow((x-tX),2)+Math.pow((y-tY),2)));
     }
     if (keyState[187]){
         // =/+
