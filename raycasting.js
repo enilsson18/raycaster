@@ -6,8 +6,9 @@ var socket = io();
 var online;
 var playerData = [];
 var playerID;
-var room = "lobby";
+var room = 0;
 var name;
+var moving;
 
 var x, y, rot, fovData;
 var fov = 60, quality = 10, accuracy = 0.02;
@@ -76,7 +77,7 @@ socket.on("setup", function(o, rm){
 
 socket.on('connect', function() {
 	name = prompt('Please Enter a Username');
-    socket.emit('newconnection', name);
+    socket.emit('newconnection', name, {});
 });
 
 socket.on('disconnection', function(id){
@@ -92,7 +93,7 @@ reset();
 
 function reset(){
 	canvas.requestPointerLock();
-  	if (room == "lobby"){
+  	if (room == 0){
 		Map = dungeonMap;
 	}
     for (var i = 0; i < Map.length; i++) {
@@ -106,6 +107,9 @@ function reset(){
     rot = 45;
 
     const loop = setInterval(run, 40);
+	moving = setInterval(function(){
+		socket.emit("move",room, {id:playerID, x:x, y:y, rot:rot});
+	},50);
 }
 
 function run(){
@@ -136,7 +140,6 @@ function run(){
 	
     MiniMap();
     Menu();
-	socket.emit("move",room, {id:playerID, x:x, y:y, rot:rot});
 }
 
 function sense2(){
