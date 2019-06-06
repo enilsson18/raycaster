@@ -23,6 +23,7 @@ var mouseSpeedScale = 8;
 var paces = 0;
 var inHand = fists;
 var cScale = 0.2;
+var hp = 100;
 
 var rockWall = new Image();
 rockWall.src = "assets/brick_wall_texture.jpg";
@@ -127,6 +128,7 @@ function reset(){
 	canvas.requestPointerLock();
 	paces = 0;
 	inHand = knife;
+	hp = 100;
   	if (room == 0){
 		Map = dungeonMap;
 	}
@@ -140,6 +142,7 @@ function reset(){
     }
     rot = 45;
 	
+	setInterval(keyLoop, 40);
 	setInterval(run, 40);
 }
 
@@ -168,8 +171,7 @@ function run(){
 			ctx.drawImage(playerImage, sensePos(playerData[i].x,playerData[i].y),(canvas.height-height)/2, height/scale, height);
 		}
 	}
-	drawItem(inHand, paces);
-	ctx.drawImage(ch, canvas.width/2-(ch.height*globalScale*cScale), canvas.height/2-(ch.height*globalScale*cScale)/2, ch.height*globalScale*cScale, ch.height*globalScale*cScale);
+	drawView();
 	
     MiniMap();
     Menu();
@@ -177,11 +179,27 @@ function run(){
 	//console.log({id:playerID, name: name, x:x, y:y, rot:rot});
 }
 
+function drawView(){
+	ctx.drawImage(ch, canvas.width/2-(ch.height*globalScale*cScale), canvas.height/2-(ch.height*globalScale*cScale)/2, ch.height*globalScale*cScale, ch.height*globalScale*cScale);
+	
+	ctx.fillStyle = "rgba(0, 0, 0, .6)";
+	ctx.fillRect(0, canvas.height*0.94, canvas.width*0.2, canvas.height*0.06);
+	ctx.fillRect(canvas.width*0.8, canvas.height*0.94, canvas.width*0.2, canvas.height*0.06);
+	ctx.fillStyle = "rgb(255,0,0)";
+	ctx.fillRect(canvas.width*0.05,canvas.height*0.955, canvas.width*0.07*hp*0.02, canvas.height*0.03);
+	ctx.fillStyle = "#fff";
+	ctx.font = "3vh Arial";
+	ctx.textAlign = "center";
+	ctx.fillText("HP: " + hp, canvas.width*0.05, canvas.height*0.98);
+	
+	drawItem(inHand, paces);
+}
+
 function drawItem(item) {
     var bobX = Math.cos(paces * 2) * globalScale * 6;
     var bobY = Math.sin(paces * 4) * globalScale * 6;
     var left = canvas.width * 0.5 + bobX;
-    var top = canvas.height * 0.67 + bobY;
+    var top = canvas.height * 0.7 + bobY;
     ctx.drawImage(item, left, top, item.width * globalScale, item.height * globalScale);
 }
 
@@ -427,7 +445,6 @@ document.addEventListener('mousemove', mouseMovement);
 canvas.addEventListener('mousedown', mouseClicks);
 
 var keyState = {};
-setInterval(keyLoop, 40);
 window.document.addEventListener('keydown', function(e) {
     keyState[e.keyCode || e.which] = true;
 }, true);
@@ -436,24 +453,13 @@ window.document.addEventListener('keyup', function(e) {
 }, true);
 
 function keyLoop() {
-	var nX = x;
-	var nY = y;
     if (keyState[37]) {
         // left arrow
         rot -= turnSpeed;
     }
     if (keyState[38] || keyState[87]) {
         // up arrow
-
-        x += Math.cos((natRot((rot)))*(Math.PI/180))*speed;
-        if (getQuadrant(x,y) != 0 && getQuadrant(x,y) != 9) {
-            x -= Math.cos((natRot((rot)))*(Math.PI/180))*speed;
-        }
-        y += Math.sin((natRot((rot)))*(Math.PI/180))*speed;
-        if (getQuadrant(x,y) != 0 && getQuadrant(x,y) != 9) {
-            y -= Math.sin((natRot((rot)))*(Math.PI/180))*speed;
-        }
-		paces += Math.sqrt((Math.pow((x-tX),2)+Math.pow((y-tY),2)));
+		move(rot);
     }
     if (keyState[39]) {
         // right arrow
@@ -462,37 +468,13 @@ function keyLoop() {
     }
     if (keyState[40] || keyState[83]) {
         // down arrow
-        x -= Math.cos((natRot((rot)))*(Math.PI/180))*speed;
-        if (getQuadrant(x,y) != 0 && getQuadrant(x,y) != 9) {
-            x += Math.cos((natRot((rot)))*(Math.PI/180))*speed;
-        }
-        y -= Math.sin((natRot((rot)))*(Math.PI/180))*speed;
-        if (getQuadrant(x,y) != 0 && getQuadrant(x,y) != 9) {
-            y += Math.sin((natRot((rot)))*(Math.PI/180))*speed;
-        }
-		paces += Math.sqrt((Math.pow((x-tX),2)+Math.pow((y-tY),2)));
+        move(rot+180);
     }
     if (keyState[68]) {
-        x += Math.cos((natRot((rot+90)))*(Math.PI/180))*speed;
-        if (getQuadrant(x,y) != 0 && getQuadrant(x,y) != 9) {
-            x -= Math.cos((natRot((rot+90)))*(Math.PI/180))*speed;
-        }
-        y += Math.sin((natRot((rot+90)))*(Math.PI/180))*speed;
-        if (getQuadrant(x,y) != 0 && getQuadrant(x,y) != 9) {
-            y -= Math.sin((natRot((rot+90)))*(Math.PI/180))*speed;
-        }
-		paces += Math.sqrt((Math.pow((x-tX),2)+Math.pow((y-tY),2)));
+        move(rot+90);
     }
     if (keyState[65]) {
-        x += Math.cos((natRot((rot-90)))*(Math.PI/180))*speed;
-        if (getQuadrant(x,y) != 0 && getQuadrant(x,y) != 9) {
-            x -= Math.cos((natRot((rot-90)))*(Math.PI/180))*speed;
-        }
-        y += Math.sin((natRot((rot-90)))*(Math.PI/180))*speed;
-        if (getQuadrant(x,y) != 0 && getQuadrant(x,y) != 9) {
-            y -= Math.sin((natRot((rot-90)))*(Math.PI/180))*speed;
-        }
-		paces += Math.sqrt((Math.pow((x-tX),2)+Math.pow((y-tY),2)));
+		move(rot-90);
     }
     if (keyState[187]){
         // =/+
@@ -515,6 +497,20 @@ function keyLoop() {
 	
     boundsCheck();
     rot = natRot(rot);
+}
+
+function move(nRot){
+	var nX = x;
+	var nY = y;
+	x += Math.cos((natRot((nRot)))*(Math.PI/180))*speed;
+    if (getQuadrant(x,y) != 0 && getQuadrant(x,y) != 9) {
+        x -= Math.cos((natRot((nRot)))*(Math.PI/180))*speed;
+    }
+    y += Math.sin((natRot((nRot)))*(Math.PI/180))*speed;
+    if (getQuadrant(x,y) != 0 && getQuadrant(x,y) != 9) {
+        y -= Math.sin((natRot((nRot)))*(Math.PI/180))*speed;
+    }
+	paces += Math.sqrt((Math.pow((x-nX),2)+Math.pow((y-nY),2)));
 }
 
 function mouseMovement(event){
