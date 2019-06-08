@@ -5,6 +5,7 @@ canvas.height = window.innerHeight;
 var socket = io();
 var online;
 var playerData = [];
+var bullets = [];
 var playerID;
 var room = 0;
 var name;
@@ -24,6 +25,11 @@ var paces = 0;
 var inHand = fists;
 var cScale = 0.2;
 var hp = 100;
+var bulletSpeed = 0.50;
+var gameOver = false;
+var clipAmmo = 30;
+var ammo = 90;
+var clipSize = 30;
 
 var rockWall = new Image();
 rockWall.src = "assets/brick_wall_texture.jpg";
@@ -85,7 +91,7 @@ var dungeonMap = [
 socket.on("setup", function(o, rm){
 	room = rm;
 	online = o;
-	playerID = o-1;
+	playerID = o;
 	reset();
 });
 
@@ -103,18 +109,22 @@ socket.on('disconnection', function(id){
 	}
 });
 
-socket.on("update", function(o, id, newName, nX, nY, nRot){
+socket.on('newBullet', function(id, nX, nY, nRot){
+	bullets.push({id: id, x: nX, y: nY, rot: nRot});
+});
+
+socket.on("update", function(o, id, newName, activity, nX, nY, nRot){
 	online = o;
 	var contains = false;
 	for (var i = 0; i < playerData.length; i++){
 		if (playerData[i].id == id){
-			playerData[i] = {id: id, name: newName, x: nX, y: nY, rot: nRot};
+			playerData[i] = {id: id, name: newName, gameOver: activity, x: nX, y: nY, rot: nRot};
 			contains = true;
 			break;
 		}
 	}
 	if (!contains){
-		playerData.push({id: id, name: newName, x: nX, y: nY, rot: nRot});
+		playerData.push({id: id, name: newName, gameOver: activity, x: nX, y: nY, rot: nRot});
 	}
 	
 	//console.log(id + " " + newName + " " + nX + " " + nY + " " + nRot);
@@ -126,8 +136,12 @@ socket.on("update", function(o, id, newName, nX, nY, nRot){
 
 function reset(){
 	canvas.requestPointerLock();
+	clipAmmo = 30;
+	ammo = 90;
+	clipSize = 30;
 	paces = 0;
 	inHand = knife;
+	gameOver = false;
 	hp = 100;
   	if (room == 0){
 		Map = dungeonMap;
@@ -147,6 +161,7 @@ function reset(){
 }
 
 function run(){
+	//draw walls
     ctx.fillStyle = "#2B2B2B";
     ctx.fillRect(0,0,canvas.width,canvas.height);
     sense();
@@ -162,20 +177,24 @@ function run(){
         }
     }
 	
-	
+	//draw players
 	for(var i = 0; i < playerData.length; i++){
 		var pDist = getDist(x,y,playerData[i].x,playerData[i].y);
 		var height = canvas.height/pDist;
 		
-		if (i != playerID){
+		if (playerData[i].id != playerID && playerData[i].gameOver == false){
 			ctx.drawImage(playerImage, sensePos(playerData[i].x,playerData[i].y),(canvas.height-height)/2, height/scale, height);
 		}
 	}
-	drawView();
 	
+	//draw bullets
+	bulletManager();
+	
+	//draw onscreen info
+	drawView();
     MiniMap();
     Menu();
-	socket.emit("move",room, playerID, name, x, y, rot);
+	socket.emit("move",room, playerID, gameOver, name, x, y, rot);
 	//console.log({id:playerID, name: name, x:x, y:y, rot:rot});
 }
 
@@ -191,6 +210,7 @@ function drawView(){
 	ctx.font = "3vh Arial";
 	ctx.textAlign = "center";
 	ctx.fillText("HP: " + hp, canvas.width*0.05, canvas.height*0.98);
+	ctx.fillText("Ammo: " + clipAmmo + " / " + ammo, canvas.width*0.90, canvas.height*0.98);
 	
 	drawItem(inHand, paces);
 }
@@ -201,6 +221,45 @@ function drawItem(item) {
     var left = canvas.width * 0.5 + bobX;
     var top = canvas.height * 0.7 + bobY;
     ctx.drawImage(item, left, top, item.width * globalScale, item.height * globalScale);
+}
+
+function bulletManager(){
+	for (var i = 0; bullets.length; i++){
+		console.log(bullets[i]);
+		//move bullet
+		bullets[i].x += Math.cos((natRot((bullets[i].rot)))*(Math.PI/180))*bulletSpeed;
+    	bullets[i].y += Math.sin((natRot((bullets[i].rot)))*(Math.PI/180))*bulletSpeed;
+		
+		//collision detection
+		//walls
+		if ((getQuadrant(bullets[i].x,bullets[i].y) != 0 && getQuadrant(bullets[i].x,bullets[i].y) != 9) || 
+			(getQuadrant(bullets[i].x,bullets[i].y) != 0 && getQuadrant(bullets[i].x,bullets[i].y) != 9)) {
+			bullets.splice(i,1);
+    	}
+		//player
+		var margin = 1;
+		if (bullets[i].x <= x + margin && bullets[i].x >= x - margin &&
+			bullets[i].y <= y + margin && bullets[i].y >= y - margin && bullets[i].id != playerID){
+			bullets.splice(i,1);
+			hp -= 10;
+		}
+		
+		//draw bullet
+		//still waiting on algorithem
+		
+	}
+}
+
+function reload(){
+	var usedBullets = 30 - clipAmmo;
+	ammo -= usedBullets;
+	if (ammo < 0){
+		clipAmmo = clipAmmo - ammo;
+		ammo = 0;
+	} else {
+		clipAmmo = 30;
+	}
+	
 }
 
 function sense2(){
@@ -438,7 +497,10 @@ function Menu(){
 }
 
 function fire(){
-	
+	if (clipAmmo > 0){
+		clipAmmo -= 1;
+		socket.emit('fire', room, playerID, x, y, rot);
+	}
 }
 
 document.addEventListener('mousemove', mouseMovement);
@@ -494,6 +556,10 @@ function keyLoop() {
         }
         scale = canvas.width/(fov*quality);
     }
+	
+	if (keyState[82]){
+		reload();
+	}
 	
     boundsCheck();
     rot = natRot(rot);

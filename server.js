@@ -47,9 +47,13 @@ io.on('connection', function(socket){
     io.sockets.emit('updateOnline', online);
 	//console.log(roomList[0]);
   });
+	
+  socket.on('fire', function(room, id, x, y, rot){
+	 io.sockets.in(room).emit('newBullet', id, x, y, rot);
+  });
   
-  socket.on('move', function(room, id, name, x, y, rot){
-	io.sockets.in(room).emit("update", id, name, x, y, rot);
+  socket.on('move', function(room, id, name, activity, x, y, rot){
+	io.sockets.in(room).emit("update", id, name, activity, x, y, rot);
   });
   
   socket.on('log', function(msg){
