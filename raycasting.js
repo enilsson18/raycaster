@@ -48,6 +48,7 @@ fists.src = "assets/fists.png";
 fists.xOffset = 0.3;
 fists.yOffset = 0.62;
 fists.scale = 1;
+fists.damage = 20;
 fists.type = "melee";
 
 var knife = new Image();
@@ -55,6 +56,7 @@ knife.src = "assets/knife_hand.png";
 knife.xOffset = 0.5;
 knife.yOffset = 0.7;
 knife.scale = 1;
+knife.damage = 30;
 knife.type = "melee";
 
 var pistol = new Image();
@@ -62,6 +64,7 @@ pistol.src = "assets/pistol.png";
 pistol.xOffset = 0.04;
 pistol.yOffset = 0.08;
 pistol.scale = 3;
+pistol.damage = 15;
 pistol.type = "gun";
 
 var Map;
@@ -125,9 +128,8 @@ socket.on('disconnection', function(id){
 	}
 });
 
-socket.on('newBullet', function(id, nX, nY, nRot){
-	bullets.push(new bullet(id, nX, nY, nRot));
-	console.log(new bullet(id, nX, nY, nRot));
+socket.on('newBullet', function(id, nX, nY, nRot, d){
+	bullets.push(new bullet(id, nX, nY, nRot, d));
 });
 
 socket.on("update", function(o, id, newName, activity, nX, nY, nRot){
@@ -151,11 +153,12 @@ socket.on("update", function(o, id, newName, activity, nX, nY, nRot){
 	}
 });
 
-function bullet(id, nX, nY, nRot){
+function bullet(id, nX, nY, nRot, d){
 	this.id = id;
 	this.x = nX;
 	this.y = nY;
 	this.rot = nRot;
+	this.damage = d;
 }
 
 function reset(){
@@ -233,8 +236,8 @@ function drawView(){
 	ctx.fillStyle = "#fff";
 	ctx.font = "3vh Arial";
 	ctx.textAlign = "center";
-	ctx.fillText("HP: " + hp, canvas.width*0.05, canvas.height*0.98);
-	ctx.fillText("Ammo: " + clipAmmo + " / " + ammo, canvas.width*0.90, canvas.height*0.98);
+	ctx.fillText("HP " + hp, canvas.width*0.05, canvas.height*0.98);
+	ctx.fillText("Ammo " + clipAmmo + " / " + ammo, canvas.width*0.90, canvas.height*0.98);
 	
 	drawItem(inHand, paces);
 }
@@ -249,7 +252,7 @@ function drawItem(item) {
 
 function bulletManager(){
 	for (var i = 0; i < bullets.length; i++){
-		console.log(bullets[i] + " " + i);
+		//console.log(bullets[i]);
 		//move bullet
 		bullets[i].x += Math.cos((natRot((bullets[i].rot)))*(Math.PI/180))*bulletSpeed;
     	bullets[i].y += Math.sin((natRot((bullets[i].rot)))*(Math.PI/180))*bulletSpeed;
@@ -265,7 +268,13 @@ function bulletManager(){
 		if (bullets[i].x <= x + margin && bullets[i].x >= x - margin &&
 			bullets[i].y <= y + margin && bullets[i].y >= y - margin && bullets[i].id != playerID){
 			bullets.splice(i,1);
-			hp -= 10;
+			
+			console.log(bullets[i].damage);
+			hp -= bullets[i].damage;
+			if (hp <= 0){
+				hp = 0;
+				die();
+			}
 		}
 		
 		//draw bullet
@@ -523,10 +532,14 @@ function Menu(){
 
 }
 
+function die(){
+	
+}
+
 function fire(){
 	if (clipAmmo > 0 && inHand.type == "gun"){
 		clipAmmo -= 1;
-		socket.emit('fire', room, playerID, x, y, rot);
+		socket.emit('fire', room, playerID, x, y, rot, inHand.damage);
 	}
 }
 

@@ -48,8 +48,8 @@ io.on('connection', function(socket){
 	//console.log(roomList[0]);
   });
 	
-  socket.on('fire', function(room, playerID, x, y, rot){
-	 io.sockets.in(room).emit('newBullet', playerID, x, y, rot);
+  socket.on('fire', function(room, playerID, x, y, rot, d){
+	 io.sockets.in(room).emit('newBullet', playerID, x, y, rot, d);
   });
   
   socket.on('move', function(room, id, name, activity, x, y, rot){
