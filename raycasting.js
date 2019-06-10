@@ -127,7 +127,7 @@ socket.on('disconnection', function(id){
 
 socket.on('newBullet', function(id, nX, nY, nRot){
 	bullets.push(new bullet(id, nX, nY, nRot));
-	console.log(id + " " + nX + " " + nY + " " + nRot);
+	console.log(new bullet(id, nX, nY, nRot));
 });
 
 socket.on("update", function(o, id, newName, activity, nX, nY, nRot){
@@ -152,10 +152,10 @@ socket.on("update", function(o, id, newName, activity, nX, nY, nRot){
 });
 
 function bullet(id, nX, nY, nRot){
-	var id = id;
-	var x = nX;
-	var y = nY;
-	var rot = nRot;
+	this.id = id;
+	this.x = nX;
+	this.y = nY;
+	this.rot = nRot;
 }
 
 function reset(){
@@ -248,8 +248,8 @@ function drawItem(item) {
 }
 
 function bulletManager(){
-	for (var i = 0; bullets.length; i++){
-		console.log(bullets[i]);
+	for (var i = 0; i < bullets.length; i++){
+		console.log(bullets[i] + " " + i);
 		//move bullet
 		bullets[i].x += Math.cos((natRot((bullets[i].rot)))*(Math.PI/180))*bulletSpeed;
     	bullets[i].y += Math.sin((natRot((bullets[i].rot)))*(Math.PI/180))*bulletSpeed;
@@ -280,6 +280,9 @@ function reload(){
 	if (ammo < 0){
 		clipAmmo = clipAmmo - usedBullets;
 		ammo = 0;
+		if (clipAmmo < 0){
+			clipAmmo = 0;
+		}
 	} else {
 		clipAmmo = 30;
 	}
