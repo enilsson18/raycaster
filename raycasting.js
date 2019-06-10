@@ -45,8 +45,24 @@ ch.src = "assets/ch.png";
 
 var fists = new Image();
 fists.src = "assets/fists.png";
+fists.xOffset = 0.3;
+fists.yOffset = 0.62;
+fists.scale = 1;
+fists.type = "melee";
+
 var knife = new Image();
 knife.src = "assets/knife_hand.png";
+knife.xOffset = 0.5;
+knife.yOffset = 0.7;
+knife.scale = 1;
+knife.type = "melee";
+
+var pistol = new Image();
+pistol.src = "assets/pistol.png";
+pistol.xOffset = 0.04;
+pistol.yOffset = 0.08;
+pistol.scale = 3;
+pistol.type = "gun";
 
 var Map;
 
@@ -110,7 +126,8 @@ socket.on('disconnection', function(id){
 });
 
 socket.on('newBullet', function(id, nX, nY, nRot){
-	bullets.push({id: id, x: nX, y: nY, rot: nRot});
+	bullets.push(new bullet(id, nX, nY, nRot));
+	console.log(id + " " + nX + " " + nY + " " + nRot);
 });
 
 socket.on("update", function(o, id, newName, activity, nX, nY, nRot){
@@ -134,13 +151,20 @@ socket.on("update", function(o, id, newName, activity, nX, nY, nRot){
 	}
 });
 
+function bullet(id, nX, nY, nRot){
+	var id = id;
+	var x = nX;
+	var y = nY;
+	var rot = nRot;
+}
+
 function reset(){
 	canvas.requestPointerLock();
 	clipAmmo = 30;
 	ammo = 90;
 	clipSize = 30;
 	paces = 0;
-	inHand = knife;
+	inHand = pistol;
 	gameOver = false;
 	hp = 100;
   	if (room == 0){
@@ -218,9 +242,9 @@ function drawView(){
 function drawItem(item) {
     var bobX = Math.cos(paces * 2) * globalScale * 6;
     var bobY = Math.sin(paces * 4) * globalScale * 6;
-    var left = canvas.width * 0.5 + bobX;
-    var top = canvas.height * 0.7 + bobY;
-    ctx.drawImage(item, left, top, item.width * globalScale, item.height * globalScale);
+    var left = canvas.width * item.xOffset + bobX;
+    var top = canvas.height * item.yOffset + bobY;
+    ctx.drawImage(item, left, top, item.width * globalScale * item.scale, item.height * globalScale * item.scale);
 }
 
 function bulletManager(){
@@ -254,7 +278,7 @@ function reload(){
 	var usedBullets = 30 - clipAmmo;
 	ammo -= usedBullets;
 	if (ammo < 0){
-		clipAmmo = clipAmmo - ammo;
+		clipAmmo = clipAmmo - usedBullets;
 		ammo = 0;
 	} else {
 		clipAmmo = 30;
@@ -497,7 +521,7 @@ function Menu(){
 }
 
 function fire(){
-	if (clipAmmo > 0){
+	if (clipAmmo > 0 && inHand.type == "gun"){
 		clipAmmo -= 1;
 		socket.emit('fire', room, playerID, x, y, rot);
 	}
@@ -557,6 +581,18 @@ function keyLoop() {
         scale = canvas.width/(fov*quality);
     }
 	
+	//1,2,3
+	if (keyState[49]){
+		inHand = pistol;
+	}
+	if (keyState[50]){
+		inHand = knife;
+	}
+	if (keyState[51]){
+		inHand = fists;
+	}
+	
+	//r
 	if (keyState[82]){
 		reload();
 	}
