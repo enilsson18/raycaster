@@ -132,8 +132,7 @@ socket.on('newBullet', function(id, nX, nY, nRot, d){
 	bullets.push(new bullet(id, nX, nY, nRot, d));
 });
 
-socket.on("update", function(o, id, newName, activity, nX, nY, nRot){
-	online = o;
+socket.on("update", function(id, newName, activity, nX, nY, nRot){
 	var contains = false;
 	for (var i = 0; i < playerData.length; i++){
 		if (playerData[i].id == id){
@@ -205,11 +204,13 @@ function run(){
     }
 	
 	//draw players
+	console.log(playerData);
 	for(var i = 0; i < playerData.length; i++){
 		var pDist = getDist(x,y,playerData[i].x,playerData[i].y);
 		var height = canvas.height/pDist;
 		
 		if (playerData[i].id != playerID && playerData[i].gameOver == false){
+			//console.log(sensePos(playerData[i].x,playerData[i].y));
 			ctx.drawImage(playerImage, sensePos(playerData[i].x,playerData[i].y),(canvas.height-height)/2, height/scale, height);
 		}
 	}
@@ -221,7 +222,7 @@ function run(){
 	drawView();
     MiniMap();
     Menu();
-	socket.emit("move",room, playerID, gameOver, name, x, y, rot);
+	socket.emit("move",room, playerID, name, gameOver, x, y, rot);
 	//console.log({id:playerID, name: name, x:x, y:y, rot:rot});
 }
 
@@ -269,7 +270,7 @@ function bulletManager(){
 			bullets[i].y <= y + margin && bullets[i].y >= y - margin && bullets[i].id != playerID){
 			bullets.splice(i,1);
 			
-			console.log(bullets[i].damage);
+			//console.log(bullets[i].damage);
 			hp -= bullets[i].damage;
 			if (hp <= 0){
 				hp = 0;
@@ -351,10 +352,36 @@ function sense2(){
 }
 
 function sensePos(nX,nY){
-	var slope = (nY-y)/(nX-x);
-	var pAngle = natRot(Math.atan(slope) * (180/Math.PI)+rot);
-	//console.log(pAngle);
-	return ((natRot(pAngle-rot)/fov)*canvas.width);
+	var dist = getDist(x,y,nX,nY);
+	var rotDiff;
+	
+	rotDiff = Math.atan2((nY-y),(nX-x));
+	
+	
+	/*
+	if (x >= nX && y >= nY) {
+		rotDiff = Math.acos((y-nY)/dist);
+	}
+	else if (x <= nX && y >= nY) {
+		rotDiff = Math.asin((x+nX)/dist);
+	}
+	else if (x >= nX && y <= nY) {
+		rotDiff = Math.acos((y+nY)/dist);
+	}
+	else if (x <= nX && y <= nY) {
+		rotDiff = Math.asin((x-nX)/dist);
+	}
+	*/
+	
+	//rotDiff -= (rot-(fov/2));
+	rotDiff -= rot*(Math.PI/180);
+	console.log(dist);
+	
+	var p1 = Math.atan(rotDiff)*dist;
+	var p2 = Math.atan((fov*(Math.PI/180) - rotDiff))*dist;
+	return ((p1)*((canvas.width)/(p1+p2))) + canvas.width;
+	
+	//return ((rotDiff/0.00001)+(canvas.width/2))-dist/2;
 }
 
 function sense(){
