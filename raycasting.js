@@ -204,7 +204,7 @@ function run(){
     }
 	
 	//draw players
-	console.log(playerData);
+	//console.log(playerData);
 	for(var i = 0; i < playerData.length; i++){
 		var pDist = getDist(x,y,playerData[i].x,playerData[i].y);
 		var height = canvas.height/pDist;
@@ -372,8 +372,9 @@ function sensePos(nX,nY){
 		rotDiff = Math.asin((x-nX)/dist);
 	}
 	*/
-	var s = (fov*(Math.PI/180)) / (Math.cos(rotDiff) * dist);
-	return (canvas.width/2 + Math.tan(rotDiff) * (fov*(Math.PI/180)) - s/2);
+	var viewDist = (canvas.width/2) / Math.tan(((fov * (Math.PI/180)) / 2));
+	var s = viewDist / (Math.cos(rotDiff) * dist);
+	return (Math.tan(rotDiff) * viewDist - s/2) * (180/Math.PI);
 	
 	//rotDiff -= (rot-(fov/2));
 	/*
