@@ -374,7 +374,7 @@ function sensePos(nX,nY){
 	*/
 	var viewDist = (canvas.width/2) / Math.tan(((fov * (Math.PI/180)) / 2));
 	var s = viewDist / (Math.cos(rotDiff) * dist);
-	return (Math.tan(rotDiff) * viewDist - s/2) * (180/Math.PI);
+	return (canvas.width/2 + Math.tan(rotDiff) * viewDist - s/2);
 	
 	//rotDiff -= (rot-(fov/2));
 	/*
