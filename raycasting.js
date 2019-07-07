@@ -265,7 +265,7 @@ function bulletManager(){
 			bullets.splice(i,1);
     	}
 		//player
-		var margin = 1;
+		var margin = 1/7;
 		if (bullets[i].x <= x + margin && bullets[i].x >= x - margin &&
 			bullets[i].y <= y + margin && bullets[i].y >= y - margin && bullets[i].id != playerID){
 			bullets.splice(i,1);
@@ -374,7 +374,37 @@ function sensePos(nX,nY){
 	*/
 	var viewDist = (canvas.width/2) / Math.tan(((fov * (Math.PI/180)) / 2));
 	var s = viewDist / (Math.cos(rotDiff) * dist);
-	return (canvas.width/2 + Math.tan(rotDiff) * viewDist - s/2);
+	s = (canvas.width/2 + Math.tan(rotDiff) * viewDist - s/2);
+	
+	var collided = false;
+	var nx = x;
+	var ny = y;
+	
+	//console.log(Math.atan2((nY-y),(nX-x)));
+	
+	for (var i = 0; i < dist; i += 0.05){
+		nx += Math.cos(Math.atan2((nY-y),(nX-x)))*0.05;
+    	ny += Math.sin(Math.atan2((nY-y),(nX-x)))*0.05;
+		if (getQuadrant(nx,ny)){
+			collided = true;
+			break;
+		}
+	}
+	
+	if (collided){
+		return canvas.width;
+	}
+	
+	rotDiff *= (180/Math.PI);
+	console.log(rotDiff);
+	
+	return s;
+	/*
+	if (rotDiff > fov || rotDiff < -fov) {
+		return canvas.width;
+	} else {
+		return s;
+	}*/
 	
 	//rotDiff -= (rot-(fov/2));
 	/*

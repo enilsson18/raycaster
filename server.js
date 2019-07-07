@@ -45,6 +45,7 @@ io.on('connection', function(socket){
     online -= 1;
 	roomList[socket.room] -= 1;
     io.sockets.emit('updateOnline', online);
+	io.sockets.in(socket.room).emit('disconnection', socket.pID);
 	//console.log(roomList[0]);
   });
 	
