@@ -25,7 +25,7 @@ var paces = 0;
 var inHand = fists;
 var cScale = 0.2;
 var hp = 100;
-var bulletSpeed = 0.50;
+var bulletSpeed = 0.05;
 var gameOver = false;
 var clipAmmo = 30;
 var ammo = 90;
@@ -211,7 +211,7 @@ function run(){
 		
 		if (playerData[i].id != playerID && playerData[i].gameOver == false){
 			//console.log(sensePos(playerData[i].x,playerData[i].y));
-			ctx.drawImage(playerImage, sensePos(playerData[i].x,playerData[i].y),(canvas.height-height)/2, height/scale, height);
+			ctx.drawImage(playerImage, sensePos(playerData[i].x,playerData[i].y) - (height/scale)/2,(canvas.height-height)/2, height/scale, height);
 		}
 	}
 	
@@ -263,6 +263,7 @@ function bulletManager(){
 		if ((getQuadrant(bullets[i].x,bullets[i].y) != 0 && getQuadrant(bullets[i].x,bullets[i].y) != 9) || 
 			(getQuadrant(bullets[i].x,bullets[i].y) != 0 && getQuadrant(bullets[i].x,bullets[i].y) != 9)) {
 			bullets.splice(i,1);
+			break;
     	}
 		//player
 		var margin = 1/7;
@@ -279,8 +280,13 @@ function bulletManager(){
 		}
 		
 		//draw bullet
-		//still waiting on algorithem
+		var pDist = getDist(x,y,bullets[i].x,bullets[i].y);
+		var height = canvas.height/(pDist*20);
 		
+		ctx.fillStyle = "#000";
+		ctx.beginPath();
+		ctx.arc(sensePos(bullets[i].x, bullets[i].y), canvas.height/2, height/2, 0, 2 * Math.PI);
+		ctx.fill();
 	}
 }
 
@@ -352,10 +358,13 @@ function sense2(){
 }
 
 function sensePos(nX,nY){
-	var dist = getDist(x,y,nX,nY);
+	var rx = x - (Math.cos(natRot(rot+90)*(Math.PI/180))*0.5);
+	var ry = y - (Math.sin(natRot(rot+90)*(Math.PI/180))*0.5);
+	
+	var dist = getDist(rx,ry,nX,nY);
 	var rotDiff;
 	
-	rotDiff = Math.atan2((nY-y),(nX-x))-(rot*(Math.PI/180));
+	rotDiff = Math.atan2((nY-ry),(nX-rx))-(rot*(Math.PI/180));
 	//rotDiff = Math.acos(nX-x)/Math.asin(nY-y);
 	
 	/*
@@ -377,34 +386,37 @@ function sensePos(nX,nY){
 	s = (canvas.width/2 + Math.tan(rotDiff) * viewDist - s/2);
 	
 	var collided = false;
-	var nx = x;
-	var ny = y;
 	
-	//console.log(Math.atan2((nY-y),(nX-x)));
+	//console.log(Math.tan(rotDiff));
+	
+	var nx = rx;
+	var ny = ry;
 	
 	for (var i = 0; i < dist; i += 0.05){
-		nx += Math.cos(Math.atan2((nY-y),(nX-x)))*0.05;
-    	ny += Math.sin(Math.atan2((nY-y),(nX-x)))*0.05;
+		nx += Math.cos(Math.atan2((nY-ry),(nX-rx)))*0.05;
+    	ny += Math.sin(Math.atan2((nY-ry),(nX-rx)))*0.05;
 		if (getQuadrant(nx,ny)){
-			collided = true;
+			if (!(nx >= rx-0.2 && nx <= rx+0.2 && ny >= ry-0.2 && ny <= ry+0.2)){
+				collided = true;
+			}
 			break;
 		}
 	}
 	
 	if (collided){
-		return canvas.width;
+		return canvas.width*2;
 	}
 	
 	rotDiff *= (180/Math.PI);
-	console.log(rotDiff);
+	//console.log(rot + " " + rotDiff);
 	
 	return s;
-	/*
+	
 	if (rotDiff > fov || rotDiff < -fov) {
 		return canvas.width;
 	} else {
 		return s;
-	}*/
+	}
 	
 	//rotDiff -= (rot-(fov/2));
 	/*
@@ -600,6 +612,9 @@ function die(){
 function fire(){
 	if (clipAmmo > 0 && inHand.type == "gun"){
 		clipAmmo -= 1;
+		if (bullets.length == 0){
+			socket.emit('fire', room, playerID, x, y, rot, inHand.damage);
+		}
 		socket.emit('fire', room, playerID, x, y, rot, inHand.damage);
 	}
 }
