@@ -25,11 +25,12 @@ var paces = 0;
 var inHand = fists;
 var cScale = 0.2;
 var hp = 100;
-var bulletSpeed = 0.05;
+var bulletSpeed = 0.5;
 var gameOver = false;
 var clipAmmo = 30;
 var ammo = 90;
 var clipSize = 30;
+var inGameMenu = false;
 
 var rockWall = new Image();
 rockWall.src = "assets/brick_wall_texture.jpg";
@@ -132,17 +133,17 @@ socket.on('newBullet', function(id, nX, nY, nRot, d){
 	bullets.push(new bullet(id, nX, nY, nRot, d));
 });
 
-socket.on("update", function(id, newName, activity, nX, nY, nRot){
+socket.on("update", function(id, newName, h, activity, nX, nY, nRot){
 	var contains = false;
 	for (var i = 0; i < playerData.length; i++){
 		if (playerData[i].id == id){
-			playerData[i] = {id: id, name: newName, gameOver: activity, x: nX, y: nY, rot: nRot};
+			playerData[i] = {id: id, name: newName, health: h,gameOver: activity, x: nX, y: nY, rot: nRot};
 			contains = true;
 			break;
 		}
 	}
 	if (!contains){
-		playerData.push({id: id, name: newName, gameOver: activity, x: nX, y: nY, rot: nRot});
+		playerData.push({id: id, name: newName, health: h, gameOver: activity, x: nX, y: nY, rot: nRot});
 	}
 	
 	//console.log(id + " " + newName + " " + nX + " " + nY + " " + nRot);
@@ -187,6 +188,10 @@ function reset(){
 }
 
 function run(){
+	if (hp <= 0){
+		die();
+	}
+	
 	//draw walls
     ctx.fillStyle = "#2B2B2B";
     ctx.fillRect(0,0,canvas.width,canvas.height);
@@ -222,7 +227,7 @@ function run(){
 	drawView();
     MiniMap();
     Menu();
-	socket.emit("move",room, playerID, name, gameOver, x, y, rot);
+	socket.emit("move",room, playerID, name, hp, gameOver, x, y, rot);
 	//console.log({id:playerID, name: name, x:x, y:y, rot:rot});
 }
 
@@ -241,6 +246,24 @@ function drawView(){
 	ctx.fillText("Ammo " + clipAmmo + " / " + ammo, canvas.width*0.90, canvas.height*0.98);
 	
 	drawItem(inHand, paces);
+	
+	//ingame menu
+	if (inGameMenu){
+		ctx.fillStyle = "#333";
+		ctx.fillRect((canvas.width/3),(canvas.height/6),(canvas.width/3),(canvas.height/6)*4);
+		ctx.fillStyle = "#fff";
+		ctx.font = "5vh Arial";
+        ctx.textAlign = "center";
+		ctx.fillText("Online Users: " + (playerData.length-1), canvas.width/2, (canvas.height/6)*1.5);
+		ctx.textAlign = "left";
+		ctx.font = "3vh Arial";
+		for (var i = 1; i < playerData.length; i++){
+			ctx.fillText(playerData[i].name, canvas.width/2 - (canvas.height/100)*20, i*(canvas.height/100)*4 + (canvas.height/6)*2);
+			
+			ctx.fillText("Health: " + playerData[i].health, canvas.width/2 + (canvas.height/100)*4, i*(canvas.height/100)*4 + (canvas.height/6)*2);
+		}
+		inGameMenu = false;
+	}
 }
 
 function drawItem(item) {
@@ -389,14 +412,17 @@ function sensePos(nX,nY){
 	
 	//console.log(Math.tan(rotDiff));
 	
-	var nx = rx;
-	var ny = ry;
+	var nx = x;
+	var ny = y;
 	
-	for (var i = 0; i < dist; i += 0.05){
-		nx += Math.cos(Math.atan2((nY-ry),(nX-rx)))*0.05;
-    	ny += Math.sin(Math.atan2((nY-ry),(nX-rx)))*0.05;
+	for (var i = 1; i < dist; i += 0.05){
+		nx += Math.cos(Math.atan2((nY-y),(nX-x)))*0.05;
+    	ny += Math.sin(Math.atan2((nY-y),(nX-x)))*0.05;
 		if (getQuadrant(nx,ny)){
-			if (!(nx >= rx-0.2 && nx <= rx+0.2 && ny >= ry-0.2 && ny <= ry+0.2)){
+			collided = true;
+			if (nx >= rx-0.2 && nx <= rx+0.2 && ny >= ry-0.2 && ny <= ry+0.2){
+				console.log("abuse");
+			} else {
 				collided = true;
 			}
 			break;
@@ -408,12 +434,16 @@ function sensePos(nX,nY){
 	}
 	
 	rotDiff *= (180/Math.PI);
-	//console.log(rot + " " + rotDiff);
+	//console.log(rotDiff);
 	
-	return s;
+	var nx = x;
+	var ny = y;
 	
-	if (rotDiff > fov || rotDiff < -fov) {
-		return canvas.width;
+	nx += Math.cos(rot*(Math.PI/180))*dist;
+    ny += Math.sin(rot*(Math.PI/180))*dist;
+	
+	if (getDist(nx,ny,nX,nY) > dist){
+		return canvas.width*2;
 	} else {
 		return s;
 	}
@@ -606,7 +636,7 @@ function Menu(){
 }
 
 function die(){
-	
+	reset();
 }
 
 function fire(){
@@ -687,6 +717,11 @@ function keyLoop() {
 	//r
 	if (keyState[82]){
 		reload();
+	}
+	
+	//tab
+	if (keyState[192]){
+		inGameMenu = true;
 	}
 	
     boundsCheck();

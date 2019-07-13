@@ -53,8 +53,8 @@ io.on('connection', function(socket){
 	 io.sockets.in(room).emit('newBullet', playerID, x, y, rot, d);
   });
   
-  socket.on('move', function(room, id, name, activity, x, y, rot){
-	io.sockets.in(room).emit("update", id, name, activity, x, y, rot);
+  socket.on('move', function(room, id, name, hp, activity, x, y, rot){
+	io.sockets.in(room).emit("update", id, name, hp, activity, x, y, rot);
   });
   
   socket.on('log', function(msg){
