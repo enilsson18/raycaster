@@ -26,6 +26,10 @@ app.get('/raycasting.js', function (req, res){
   res.sendFile(__dirname + '/raycasting.js');
 });
 
+app.get('/maps.js', function (req, res){
+  res.sendFile(__dirname + '/maps.js');
+});
+
 io.on('connection', function(socket){
   socket.on('newconnection', function(name){
       console.log('player has connected');
@@ -53,8 +57,12 @@ io.on('connection', function(socket){
 	 io.sockets.in(room).emit('newBullet', playerID, x, y, rot, d);
   });
   
-  socket.on('move', function(room, id, name, hp, activity, x, y, rot){
-	io.sockets.in(room).emit("update", id, name, hp, activity, x, y, rot);
+  socket.on('move', function(room, id, name, hp, kills, activity, x, y, rot){
+	io.sockets.in(room).emit("update", id, name, hp, kills, activity, x, y, rot);
+  });
+
+  socket.on('kill', function(room, id, killerID){
+	io.sockets.in(room).emit("death", killerID);
   });
   
   socket.on('log', function(msg){

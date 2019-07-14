@@ -31,6 +31,7 @@ var clipAmmo = 30;
 var ammo = 90;
 var clipSize = 30;
 var inGameMenu = false;
+var kills = 0;
 
 var rockWall = new Image();
 rockWall.src = "assets/brick_wall_texture.jpg";
@@ -40,6 +41,8 @@ var testWall = new Image();
 testWall.src = "assets/testing.png";
 var playerImage = new Image();
 playerImage.src = "assets/mario.png";
+var portal = new Image();
+portal.src = "assets/portal.png";
 
 var ch = new Image();
 ch.src = "assets/ch.png";
@@ -70,45 +73,12 @@ pistol.type = "gun";
 
 var Map;
 
-var testMap = [
-    [1,1,1,1,1,1,1,1,1,1,1,1],
-    [1,0,0,0,0,0,0,0,0,0,0,1],
-    [1,0,1,0,0,0,0,2,2,2,0,1],
-    [1,0,1,1,0,0,0,2,0,2,0,1],
-    [1,0,1,1,0,0,0,2,0,2,0,1],
-    [1,0,1,0,0,0,0,2,0,0,9,1],
-    [1,1,1,1,1,1,1,1,1,1,1,1]
-];
-
-var dungeonMap = [
-   [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-   [1,1,1,1,1,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,0,0,1],
-   [1,1,1,1,1,0,9,0,1,0,0,0,0,0,1,0,0,0,1,0,1,0,1],
-   [1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,1,0,1],
-   [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,0,1,1,1],
-   [1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,1,1,1,0,0,0,1],
-   [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1],
-   [1,1,1,1,1,0,0,0,0,0,1,1,1,0,0,0,0,0,1,0,0,0,1],
-   [1,1,1,1,1,0,0,0,0,0,1,1,1,0,0,0,0,0,1,0,1,1,1],
-   [1,1,1,1,1,0,0,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,1],
-   [1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,0,1,1,1,1,1,0,1],
-   [1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1,1,1,1,1,0,1],
-   [1,0,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,0,1],
-   [1,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,0,1,1,1,0,1],
-   [1,1,1,0,1,0,0,0,0,0,1,0,1,0,0,0,0,0,1,1,1,0,1],
-   [0,0,1,0,1,0,0,0,0,0,1,0,0,0,0,0,0,0,1,1,1,0,1],
-   [1,0,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1],
-   [1,0,1,0,1,1,1,0,0,0,0,0,0,0,1,1,1,1,1,1,1,0,1],
-   [1,0,1,0,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,1,1,0,1],
-   [1,0,1,0,1,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,1,0,1],
-   [1,0,1,0,1,0,0,0,1,0,0,0,0,0,1,0,0,0,1,0,1,0,1],
-   [1,0,0,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,1,0,0,0,1],
-   [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
-];
+var spriteList = [];
 
 //reset();
 
 socket.on("setup", function(o, rm){
+	kills = 0;
 	room = rm;
 	online = o;
 	playerID = o;
@@ -129,21 +99,27 @@ socket.on('disconnection', function(id){
 	}
 });
 
+socket.on('death', function(ID){
+	if (id == ID){
+		kills += 1;
+	}
+});
+
 socket.on('newBullet', function(id, nX, nY, nRot, d){
 	bullets.push(new bullet(id, nX, nY, nRot, d));
 });
 
-socket.on("update", function(id, newName, h, activity, nX, nY, nRot){
+socket.on("update", function(id, newName, h, k, activity, nX, nY, nRot){
 	var contains = false;
 	for (var i = 0; i < playerData.length; i++){
 		if (playerData[i].id == id){
-			playerData[i] = {id: id, name: newName, health: h,gameOver: activity, x: nX, y: nY, rot: nRot};
+			playerData[i] = {id: id, name: newName, health: h, kills: k, gameOver: activity, x: nX, y: nY, rot: nRot};
 			contains = true;
 			break;
 		}
 	}
 	if (!contains){
-		playerData.push({id: id, name: newName, health: h, gameOver: activity, x: nX, y: nY, rot: nRot});
+		playerData.push({id: id, name: newName, health: h, kills: k, gameOver: activity, x: nX, y: nY, rot: nRot});
 	}
 	
 	//console.log(id + " " + newName + " " + nX + " " + nY + " " + nRot);
@@ -161,6 +137,13 @@ function bullet(id, nX, nY, nRot, d){
 	this.damage = d;
 }
 
+function Sprite(img, func, nx, ny){
+	this.img = img;
+	this.func = func;
+	this.x = nx;
+	this.y = ny;
+}
+
 function reset(){
 	canvas.requestPointerLock();
 	clipAmmo = 30;
@@ -173,14 +156,27 @@ function reset(){
   	if (room == 0){
 		Map = dungeonMap;
 	}
-    for (var i = 0; i < Map.length; i++) {
-        for (var j = 0; j < Map[i].length; j++) {
-            if (Map[i][j] == 9) {
-                x = j+0.5;
-                y = i+0.5;
-            }
-        }
-    }
+	
+	var selectingSpawn = true;
+	while (selectingSpawn){
+    	for (var i = 0; i < Map.length; i++) {
+    	    for (var j = 0; j < Map[i].length; j++) {
+				var randNum = Math.floor(Math.random()*20);
+    	        if (Map[i][j] == 9 && randNum == 0) {
+    	            x = j+0.5;
+    	            y = i+0.5;
+					selectingSpawn = false;
+					break;
+    	        }
+				else if (Map[i][j] == 11) {
+					spriteList.push(new Sprite(portal, function(){socket.emit("joinffa");}, j, i));
+				}
+    	    }
+			if (!selectingSpawn){
+				break;
+			}
+    	}
+	}
     rot = 45;
 	
 	setInterval(keyLoop, 40);
@@ -220,6 +216,15 @@ function run(){
 		}
 	}
 	
+	//draw sprites
+	for (var i = 0; i < spriteList.length; i++){
+		var pDist = getDist(x,y,spriteList[i].x,spriteList[i].y);
+		var height = canvas.height/pDist;
+		
+		//console.log(sensePos(playerData[i].x,playerData[i].y));
+		ctx.drawImage(spriteList.img, sensePos(spriteList[i].x,spriteList[i].y) - (height/scale)/2,(canvas.height-height)/2, height/scale, height);
+	}
+	
 	//draw bullets
 	bulletManager();
 	
@@ -227,7 +232,7 @@ function run(){
 	drawView();
     MiniMap();
     Menu();
-	socket.emit("move",room, playerID, name, hp, gameOver, x, y, rot);
+	socket.emit("move",room, playerID, name, hp, kills, gameOver, x, y, rot);
 	//console.log({id:playerID, name: name, x:x, y:y, rot:rot});
 }
 
@@ -260,7 +265,7 @@ function drawView(){
 		for (var i = 1; i < playerData.length; i++){
 			ctx.fillText(playerData[i].name, canvas.width/2 - (canvas.height/100)*20, i*(canvas.height/100)*4 + (canvas.height/6)*2);
 			
-			ctx.fillText("Health: " + playerData[i].health, canvas.width/2 + (canvas.height/100)*4, i*(canvas.height/100)*4 + (canvas.height/6)*2);
+			ctx.fillText("HP:" + playerData[i].health + " K's:" + playerData[i].kills, canvas.width/2 + (canvas.height/100)*3, i*(canvas.height/100)*4 + (canvas.height/6)*2);
 		}
 		inGameMenu = false;
 	}
@@ -298,7 +303,7 @@ function bulletManager(){
 			hp -= bullets[i].damage;
 			if (hp <= 0){
 				hp = 0;
-				die();
+				die(bullets[i].id);
 			}
 		}
 		
@@ -326,6 +331,8 @@ function reload(){
 		clipAmmo = 30;
 	}
 	
+	clipAmmo = 30;
+	ammo = 90;
 }
 
 function sense2(){
@@ -635,7 +642,8 @@ function Menu(){
 
 }
 
-function die(){
+function die(ID){
+	socket.emit('kill', id, ID);
 	reset();
 }
 
