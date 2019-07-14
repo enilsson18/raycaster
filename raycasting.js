@@ -12,7 +12,7 @@ var name;
 var moving;
 
 var x, y, rot, fovData;
-var fov = 60, quality = 10, accuracy = 0.02;
+var fov = 60, quality = 7, accuracy = 0.02;
 var standardColor = new color(0,0,255);
 var black = new color(0,0,0);
 var red = new color(255,0,0);
@@ -100,7 +100,7 @@ socket.on('disconnection', function(id){
 });
 
 socket.on('death', function(ID){
-	if (id == ID){
+	if (playerID == ID){
 		kills += 1;
 	}
 });
@@ -294,7 +294,7 @@ function bulletManager(){
 			break;
     	}
 		//player
-		var margin = 1/7;
+		var margin = 2/7;
 		if (bullets[i].x <= x + margin && bullets[i].x >= x - margin &&
 			bullets[i].y <= y + margin && bullets[i].y >= y - margin && bullets[i].id != playerID){
 			bullets.splice(i,1);
@@ -643,7 +643,7 @@ function Menu(){
 }
 
 function die(ID){
-	socket.emit('kill', id, ID);
+	socket.emit('kill', playerID, ID);
 	reset();
 }
 
