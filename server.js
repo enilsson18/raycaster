@@ -62,6 +62,7 @@ io.on('connection', function(socket){
   });
 
   socket.on('kill', function(room, id, killerID){
+	console.log("player killed " + id);
 	io.sockets.in(room).emit("death", killerID);
   });
   

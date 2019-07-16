@@ -32,6 +32,7 @@ var ammo = 90;
 var clipSize = 30;
 var inGameMenu = false;
 var kills = 0;
+var noClip = false;
 
 var rockWall = new Image();
 rockWall.src = "assets/brick_wall_texture.jpg";
@@ -428,7 +429,7 @@ function sensePos(nX,nY){
 		if (getQuadrant(nx,ny)){
 			collided = true;
 			if (nx >= rx-0.2 && nx <= rx+0.2 && ny >= ry-0.2 && ny <= ry+0.2){
-				console.log("abuse");
+				//console.log("abuse");
 			} else {
 				collided = true;
 			}
@@ -643,7 +644,7 @@ function Menu(){
 }
 
 function die(ID){
-	socket.emit('kill', playerID, ID);
+	socket.emit('kill', room, playerID, ID);
 	reset();
 }
 
@@ -740,11 +741,11 @@ function move(nRot){
 	var nX = x;
 	var nY = y;
 	x += Math.cos((natRot((nRot)))*(Math.PI/180))*speed;
-    if (getQuadrant(x,y) != 0 && getQuadrant(x,y) != 9) {
+    if (getQuadrant(x,y) != 0 && getQuadrant(x,y) != 9 && !noClip) {
         x -= Math.cos((natRot((nRot)))*(Math.PI/180))*speed;
     }
     y += Math.sin((natRot((nRot)))*(Math.PI/180))*speed;
-    if (getQuadrant(x,y) != 0 && getQuadrant(x,y) != 9) {
+    if (getQuadrant(x,y) != 0 && getQuadrant(x,y) != 9 && !noClip) {
         y -= Math.sin((natRot((nRot)))*(Math.PI/180))*speed;
     }
 	paces += Math.sqrt((Math.pow((x-nX),2)+Math.pow((y-nY),2)));
@@ -772,4 +773,11 @@ function natRot(r){
         return r + 360;
     }
     return r % 360;
+}
+
+//commands
+function noclip(code){
+	if (code == "meme21"){
+		noClip = !noClip;
+	}
 }
