@@ -353,7 +353,7 @@ function sense2(){
 
         //x axis
         while(getQuadrant(tX,tY) == 0 || getQuadrant(tX,tY) == 9){
-            var deltaDistX = Math.abs(1 / tX)
+            var deltaDistX = Math.abs(1 / tX);
             tX += Math.cos(finalRot*(Math.PI/180)) * deltaDistX;
             tY += Math.sin(finalRot*(Math.PI/180)) * deltaDistX;
         }
@@ -363,7 +363,7 @@ function sense2(){
         tY = y;
 
         while(getQuadrant(tX,tY) == 0 || getQuadrant(tX,tY) == 9){
-            var deltaDistY = Math.abs(1 / tY)
+            var deltaDistY = Math.abs(1 / tY);
             tX += Math.cos(finalRot*(Math.PI/180)) * deltaDistY;
             tY += Math.sin(finalRot*(Math.PI/180)) * deltaDistY;
         }
