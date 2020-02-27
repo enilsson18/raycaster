@@ -77,6 +77,8 @@ var Map;
 
 var spriteList = [];
 
+var conversion = Math.PI/180;
+
 //reset();
 
 socket.on("setup", function(o, rm){
@@ -351,7 +353,27 @@ function sense2(){
         var finalRot = natRot((rot-(fov/2))+i/quality);
         var collidedEdges = [];
 
+        var sideDistY = 0;
+        var sideDistX = 0;
+
+        /*
+        //set the side offset for ray
+        if (rot >= 0 && rot < 180){
+            sideDistY = -(x-Math.floor(x))/Math.cos(rot * conversion);
+        } else {
+            sideDistY = (Math.ceil(x)-x)/Math.cos(rot * conversion);
+        }
+
+        if (rot >= 90 && rot < 270){
+            sideDistX = (Math.ceil(x)-x)/Math.sin(rot * conversion);
+        } else {
+            sideDistX = -(x-Math.floor(x))/Math.sin(rot * conversion);
+        }
+        console.log("x: " + sideDistX + " y: " + sideDistY);
+        */
         //x axis
+        tX = x + sideDistX;
+        tY = y + sideDistY;
         while(getQuadrant(tX,tY) == 0 || getQuadrant(tX,tY) == 9){
             var deltaDistX = Math.abs(1 / tX);
             tX += Math.cos(finalRot*(Math.PI/180)) * deltaDistX;
@@ -359,9 +381,9 @@ function sense2(){
         }
         collidedEdges.push({x:tX, y:tY});
 
-        tX = x;
-        tY = y;
-
+        //y axis
+        tX = x + sideDistX;
+        tY = y + sideDistY;
         while(getQuadrant(tX,tY) == 0 || getQuadrant(tX,tY) == 9){
             var deltaDistY = Math.abs(1 / tY);
             tX += Math.cos(finalRot*(Math.PI/180)) * deltaDistY;
