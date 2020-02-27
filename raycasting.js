@@ -12,7 +12,8 @@ var name;
 var moving;
 
 var x, y, rot, fovData;
-var fov = 60, quality = 7, accuracy = 0.02;
+var fov = 60, quality = 10, accuracy = 0.005;
+var highResMode = false;
 var standardColor = new color(0,0,255);
 var black = new color(0,0,0);
 var red = new color(255,0,0);
@@ -192,7 +193,12 @@ function run(){
 	//draw walls
     ctx.fillStyle = "#2B2B2B";
     ctx.fillRect(0,0,canvas.width,canvas.height);
-    sense();
+    if (highResMode){
+        sense();
+    }
+    else {
+        sense2();
+    }
 	
     for (var i = 0; i < fovData.length; i++){
         var height = canvas.height/fovData[i].dist;
@@ -343,48 +349,47 @@ function sense2(){
         var tX = x;
         var tY = y;
         var finalRot = natRot((rot-(fov/2))+i/quality);
-        tX += Math.cos((natRot((rot-(fov/2))+i/quality))*(Math.PI/180))*0.5;
-        tY += Math.sin((natRot((rot-(fov/2))+i/quality))*(Math.PI/180))*0.5;
-        var ySlope = ((tY-y) / (tX-x)) * (tX-x);
-        var xSlope = ((tX-x) / (tY-y)) * (tY-y);
+        var collidedEdges = [];
+
+        //x axis
+        while(getQuadrant(tX,tY) == 0 || getQuadrant(tX,tY) == 9){
+            var deltaDistX = Math.abs(1 / tX)
+            tX += Math.cos(finalRot*(Math.PI/180)) * deltaDistX;
+            tY += Math.sin(finalRot*(Math.PI/180)) * deltaDistX;
+        }
+        collidedEdges.push({x:tX, y:tY});
+
         tX = x;
         tY = y;
 
-        while(getQuadrant(tX,tY) == 0 || getQuadrant(tX,tY) == 9 ){
-          if (finalRot > 45 && finalRot <= 135){
-            tY = Math.floor(tY);
-            tY += 1;
-            tX += xSlope;
-          } 
-          else if (finalRot > 135 && finalRot <= 225) {
-            tX = Math.floor(tX);
-            tX -= 1;
-            tY += ySlope;
-          }
-          else if (finalRot > 225 && finalRot <= 315) {
-            tY = Math.floor(tY);
-            tY -= 1;
-            tX += xSlope;
-          }
-          else if (finalRot > 315 || finalRot <= 45) {
-            tX = Math.floor(tX);
-            tX += 1;
-            tY += ySlope;
-          }
+        while(getQuadrant(tX,tY) == 0 || getQuadrant(tX,tY) == 9){
+            var deltaDistY = Math.abs(1 / tY)
+            tX += Math.cos(finalRot*(Math.PI/180)) * deltaDistY;
+            tY += Math.sin(finalRot*(Math.PI/180)) * deltaDistY;
+        }
+        collidedEdges.push({x:tX, y:tY});
+
+        if (getDist(collidedEdges[0].x,collidedEdges[0].y,x,y) < getDist(collidedEdges[1].x,collidedEdges[1].y,x,y)){
+            tX = collidedEdges[0].x;
+            tY = collidedEdges[0].y
+        }else {
+            tX = collidedEdges[1].x;
+            tY = collidedEdges[1].y
         }
 
         dist = Math.sqrt((Math.pow((x-tX),2)+Math.pow((y-tY),2)));
 
         //console.log(tX + " " + tY + " " + getQuadrant(tX,tY));
-        if (getQuadrant(tX,tY) == 1 || getQuadrant(tX,tY) == 2) {
-            fovData.push(new fovSeg(dist, true, new Image(), 0, darken(standardColor.r, standardColor.g, standardColor.b,
-                canvas.height - dist)));
+        if (getQuadrant(tX,tY) == 3){
+            fovData.push(new fovSeg(dist, false, testWall, getExactCollision(tX,tY,finalRot, testWall), black.getColor()));
         }
-        /*
         if (getQuadrant(tX,tY) == 2){
-            fovData.push(new fovSeg(dist, false, wall, getExactCollision(tX,tY,finalRot, wall), black.getColor()));
+            fovData.push(new fovSeg(dist, false, brickWall, getExactCollision(tX,tY,finalRot, brickWall), black.getColor()));
         }
-        */
+        if (getQuadrant(tX,tY) == 1){
+            fovData.push(new fovSeg(dist, false, rockWall, getExactCollision(tX,tY,finalRot, rockWall), black.getColor()));
+        }
+
     }
 }
 
